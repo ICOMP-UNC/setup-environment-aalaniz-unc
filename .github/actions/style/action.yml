@@ -13,14 +13,18 @@ runs:
 
         echo $PROJECT_PATH
 
-        # ToDo: Add documentation about 'tr' command and describe better this command
+        # "find" will search within src for files recursively without regard to directories and subdirectories. 
+        # Files that only have the extension (cpp, hpp, h or c) will be filtered. 
+        # This list of files will be separated with a white space instead of a line break with the tr function. 
+        # The result will be stored in the SOURCE_FILES variable.
         SOURCE_FILES=$(find $PROJECT_PATH/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
         SOURCE_FILES+=$(find $PROJECT_PATH/include -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
         SOURCE_FILES+=$(find $PROJECT_PATH/lib -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
 
         ERROR_FILE_FLAG=$PROJECT_PATH/clang-format_errors.txt
 
-        # ToDo: Add documentation and describe better this command
+        # Run clang-format and in-place format the files specified in $SOURCE_FILES. 
+        # The output of this part of the command is redirected to the file specified by the ERROR_FILE_FLAG variable.
         CLANG_COMMAND=$(clang-format -i $SOURCE_FILES) > ${ERROR_FILE_FLAG}
 
         echo "Running: clang-format -i $SOURCE_FILES"
