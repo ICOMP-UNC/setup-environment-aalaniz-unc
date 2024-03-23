@@ -1,0 +1,46 @@
+name: "Style check"
+description: "Style check using clang-format"
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Run clang-format"
+      shell: bash
+      run: |
+        # We only make check, not changes
+        # Use the find command with the variable
+        PROJECT_PATH=$(pwd)
+
+        echo $PROJECT_PATH
+
+        # "find" will search within src for files recursively without regard to directories and subdirectories. 
+        # Files that only have the extension (cpp, hpp, h or c) will be filtered. 
+        # This list of files will be separated with a white space instead of a line break with the tr function. 
+        # The result will be stored in the SOURCE_FILES variable.
+        SOURCE_FILES=$(find $PROJECT_PATH/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
+        SOURCE_FILES+=$(find $PROJECT_PATH/include -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
+        SOURCE_FILES+=$(find $PROJECT_PATH/lib -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" -or -name "*.c" \) | tr "\n" " ")
+
+        ERROR_FILE_FLAG=$PROJECT_PATH/clang-format_errors.txt
+
+        # Run clang-format and in-place format the files specified in $SOURCE_FILES. 
+        # The output of this part of the command is redirected to the file specified by the ERROR_FILE_FLAG variable.
+        CLANG_COMMAND=$(clang-format -i $SOURCE_FILES) > ${ERROR_FILE_FLAG}
+
+        echo "Running: clang-format -i $SOURCE_FILES"
+
+        if [ -s $ERROR_FILE_FLAG ]; then
+            echo "Error: There are some files that are not formatted correctly"
+            exit 1
+        else
+            echo "All files are formatted correctly. Niiiceee"
+            exit 0
+        fi
+
+    # Upload errors as an artifact, when failed
+    - uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: Clang-format errors!!!
+        path: $PROJECT_PATH/clang-format_errors.txt
+        retention-days: 1

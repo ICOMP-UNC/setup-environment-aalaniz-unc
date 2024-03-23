@@ -1,0 +1,47 @@
+name: "Test and coverage check"
+description: "Test and coverage check with gcovr, pass if coverage is greater than 20%"
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Run coverage"
+      shell: bash
+      run: |
+        PROJECT_PATH=$(pwd)
+
+        # This command runs ctest on the executable tests in the "tests" folder (in the "build" directory). 
+        # The --output-on-failure parameter indicates that it will only display output if the tests fail.
+        ctest --test-dir build/tests --output-on-failure
+
+        # gcovr will generate a coverage report based on the coverage data in the current directory specified with the -r parameter.
+        # Then the result will be saved as a TXT file in the $PROJECT_PATH path.
+        gcovr -r $PROJECT_PATH . > $PROJECT_PATH/coverage.txt
+
+        echo "Runnig: gcovr -r $PROJECT_PATH ."
+
+        cat $PROJECT_PATH/coverage.txt
+
+        # Find the value of correct coverage
+        # "grep" looks for the line that contains the word "TOTAL" in the coverage report. 
+        # That line is the input to the "awk" command to get the value of the last column (separated by whitespace). 
+        # NF is a built-in variable that indicates that.
+        # The output of the command is the input of the cut command which will get the first field up to the "%" symbol. 
+        # In this case you obtain the numerical value of the total percentage.
+        COVERAGE_RESULT=$(grep "TOTAL" $PROJECT_PATH/coverage.txt | awk '{print $NF}' | cut -d '%' -f 1)
+
+        # Coverage lines GT 20
+        if [ "$(echo "$COVERAGE_RESULT > 20" | bc)" -eq 1 ]; then
+            echo "Coverage is greater than 20%. Nice!"
+            exit 0
+        else
+            echo "Error: Coverage is less than or equal to 20%"
+            exit 1
+        fi
+
+    # Upload errors as an artifact, when failed
+    - uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: Tests or coverage errors!!!
+        path: $(pwd)/error_flag.txt
+        retention-days: 1
